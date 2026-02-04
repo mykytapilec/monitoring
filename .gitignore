@@ -1,0 +1,22 @@
+# Environment variables
+.env
+.env.*
+
+# Local Docker Compose overrides
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.idea/
+.vscode/
+
+# Temporary files
+*.tmp
+*.swp

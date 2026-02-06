@@ -1,0 +1,20 @@
+
+global:
+  smtp_smarthost: "mailpit:1025"
+  smtp_from: "alerts@monitoring.local"
+  smtp_require_tls: false
+
+route:
+  receiver: "mailpit"
+  group_by:
+    - alertname
+    - job
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 4h
+
+receivers:
+  - name: "mailpit"
+    email_configs:
+      - to: "admin@monitoring.local"
+        send_resolved: true

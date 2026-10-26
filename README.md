@@ -1,29 +1,38 @@
 # Monitoring
 
-Infrastructure monitoring stack built as part of the [roadmap.sh Monitoring project](https://roadmap.sh/projects/monitoring).
+A local infrastructure monitoring stack built as part of the [roadmap.sh Monitoring project](https://roadmap.sh/projects/monitoring).
+
+The stack uses Prometheus to collect metrics, Node Exporter to expose system metrics, Grafana to visualize monitoring data, Alertmanager to route alerts, and Mailpit to capture alert notification emails locally.
 
 ## Project Goals
 
-- Collect infrastructure metrics with Prometheus and Node Exporter.
-- Visualize metrics using Grafana dashboards.
+- Collect infrastructure metrics using Prometheus and Node Exporter.
+- Visualize metrics with a provisioned Grafana dashboard.
 - Provision the Prometheus data source and dashboards automatically.
+- Define alerting rules for unavailable monitoring targets and high CPU usage.
+- Route alerts through Alertmanager and verify email notifications using Mailpit.
 - Provide a reproducible local monitoring environment with Docker Compose.
-- Extend the stack with alerting rules and monitoring alerts in future iterations.
 
 ## Technology Stack
 
 - Docker Compose
 - Prometheus
-- Grafana
 - Node Exporter
+- Grafana
+- Alertmanager
+- Mailpit
 
 ## Services
 
 | Service | URL | Purpose |
 | --- | --- | --- |
-| Prometheus | http://localhost:9090 | Metrics collection and querying |
-| Grafana | http://localhost:3000 | Metrics visualization |
+| Prometheus | http://localhost:9090 | Metrics collection, querying, and alert rule evaluation |
+| Grafana | http://localhost:3000 | Metrics visualization and dashboards |
 | Node Exporter | http://localhost:9100/metrics | System metrics endpoint |
+| Alertmanager | http://localhost:9093 | Alert grouping, routing, and notification delivery |
+| Mailpit | http://localhost:8025 | Local email inbox for alert notifications |
+
+Mailpit's SMTP endpoint is available internally to the Docker Compose network at `mailpit:1025`.
 
 ## Prerequisites
 
@@ -50,6 +59,12 @@ View service logs:
 docker compose logs -f
 ```
 
+To inspect a specific service, for example Prometheus:
+
+```bash
+docker compose logs -f prometheus
+```
+
 ## Grafana Access
 
 Open [Grafana](http://localhost:3000) in your browser.
@@ -59,26 +74,81 @@ The local development credentials configured in Docker Compose are:
 - Username: `admin`
 - Password: `admin`
 
-These credentials are for local development only. Change them before exposing Grafana to a network or deploying it publicly.
+These credentials are intended for local development only. Change them before exposing Grafana to a network or deploying it publicly.
 
-The Prometheus data source and the Monitoring Dashboard are provisioned automatically. The dashboard includes panels for monitoring target availability and CPU usage.
+The Prometheus data source and the Monitoring Dashboard are provisioned automatically from configuration files in the `grafana/provisioning` and `grafana/dashboards` directories.
+
+The dashboard includes the following panels:
+
+- CPU Usage
+- Monitoring Targets
+- Memory Usage
+- Container Filesystem Usage
+- Network Traffic
+
+## Alerting
+
+Prometheus loads alerting rules from `prometheus/rules/alert-rules.yml`.
+
+The current rules are:
+
+| Alert | Condition | Severity |
+| --- | --- | --- |
+| `PrometheusTargetDown` | A monitored target is unavailable for more than 1 minute | `critical` |
+| `HighCPUUsage` | CPU usage exceeds 80% for more than 5 minutes | `warning` |
+
+Prometheus sends alerts to Alertmanager, which routes notifications to Mailpit through the local SMTP endpoint.
+
+Open [Mailpit](http://localhost:8025) to inspect captured alert emails. Notifications are sent to `admin@monitoring.local` from `alerts@monitoring.local`.
+
+Mailpit captures emails locally. This setup does not deliver messages to a real external email inbox.
 
 ## Verification
 
-Check that Prometheus is ready:
+### Check Prometheus readiness
 
 ```bash
-curl -s http://localhost:9090/-/ready
+curl -sS http://localhost:9090/-/ready
 ```
 
-Query target availability:
+### Check Prometheus targets
 
 ```bash
-curl -sG http://localhost:9090/api/v1/query \
+curl -sS http://localhost:9090/api/v1/targets
+```
+
+### Query target availability
+
+```bash
+curl -sSG http://localhost:9090/api/v1/query \
   --data-urlencode 'query=up'
 ```
 
-A value of `1` indicates that a target is reachable.
+A value of `1` indicates that a target is reachable. A value of `0` indicates that a target is unavailable.
+
+### Check loaded alert rules
+
+```bash
+curl -sS http://localhost:9090/api/v1/rules
+```
+
+### Check Alertmanager health
+
+```bash
+curl -sS http://localhost:9093/-/healthy
+```
+
+### Check active alerts
+
+```bash
+curl -sS http://localhost:9093/api/v2/alerts
+```
+
+An empty alert list is expected when no alerts are active.
+
+### Verify email notifications
+
+Open [Mailpit](http://localhost:8025) and inspect the inbox for alert notification emails. Both firing and resolved notifications may be present.
 
 ## Stopping the Stack
 
@@ -90,8 +160,8 @@ docker compose down
 
 Persistent metrics and Grafana data are stored in Docker-managed volumes. Running `docker compose down` preserves these volumes.
 
-To remove the stack's persistent data as well, Docker volumes must be removed explicitly.
+To remove the stack's persistent data as well, remove the associated Docker volumes explicitly. This permanently deletes the data stored in those volumes.
 
 ## Project Status
 
-The initial monitoring stack is configured and verified locally. Alerting rules and additional dashboards can be added in subsequent iterations.
+The local monitoring stack is configured and verified. Prometheus metrics collection, Grafana dashboard provisioning, alert rule evaluation, Alertmanager health, and local email notification capture have been checked.

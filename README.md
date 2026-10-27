@@ -133,6 +133,19 @@ A successful validation reports `SUCCESS` and the number of rules found.
 
 The `--rm` flag removes the temporary validation container after the command finishes. No additional long-running service is required.
 
+
+## Validate Alertmanager Configuration
+
+Validate the Alertmanager configuration using `amtool` from the same Alertmanager image used by the monitoring stack:
+
+```bash
+docker compose run --rm alertmanager-validator
+```
+
+The validator checks `alertmanager/alertmanager.yml` without starting a persistent service.
+
+A successful validation reports that the configuration file is valid. The `--rm` flag removes the temporary container after the command finishes.
+
 ## Verification
 
 ### Check Prometheus readiness

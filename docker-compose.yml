@@ -32,6 +32,18 @@ services:
       - "config"
       - "/etc/prometheus/prometheus.yml"
 
+  alertmanager-validator:
+    image: prom/alertmanager:v0.28.1
+    profiles:
+      - validation
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    entrypoint:
+      - "/bin/amtool"
+    command:
+      - "check-config"
+      - "/etc/alertmanager/alertmanager.yml"
+
   node-exporter:
     image: prom/node-exporter:v1.9.1
     container_name: monitoring-node-exporter

@@ -11,6 +11,7 @@ The stack uses Prometheus to collect metrics, Node Exporter to expose system met
 - Provision the Prometheus data source and dashboards automatically.
 - Define alerting rules for unavailable monitoring targets and high CPU usage.
 - Route alerts through Alertmanager and verify email notifications using Mailpit.
+- Validate Prometheus configuration and alerting rules with `promtool`.
 - Provide a reproducible local monitoring environment with Docker Compose.
 
 ## Technology Stack
@@ -21,6 +22,7 @@ The stack uses Prometheus to collect metrics, Node Exporter to expose system met
 - Grafana
 - Alertmanager
 - Mailpit
+- promtool
 
 ## Services
 
@@ -103,6 +105,34 @@ Open [Mailpit](http://localhost:8025) to inspect captured alert emails. Notifica
 
 Mailpit captures emails locally. This setup does not deliver messages to a real external email inbox.
 
+## Validation with promtool
+
+The project includes a `promtool` service based on the same Prometheus image used by the monitoring stack. The service uses the `validation` profile, so it is not started during a normal `docker compose up -d`.
+
+### Validate Docker Compose configuration
+
+```bash
+docker compose config --quiet
+```
+
+### Validate Prometheus configuration and alerting rules
+
+```bash
+docker compose run --rm promtool
+```
+
+This command validates `prometheus/prometheus.yml` and the alerting rule files referenced by the configuration.
+
+### Validate alerting rules separately
+
+```bash
+docker compose run --rm --entrypoint /bin/promtool promtool check rules /etc/prometheus/rules/alert-rules.yml
+```
+
+A successful validation reports `SUCCESS` and the number of rules found.
+
+The `--rm` flag removes the temporary validation container after the command finishes. No additional long-running service is required.
+
 ## Verification
 
 ### Check Prometheus readiness
@@ -164,4 +194,4 @@ To remove the stack's persistent data as well, remove the associated Docker volu
 
 ## Project Status
 
-The local monitoring stack is configured and verified. Prometheus metrics collection, Grafana dashboard provisioning, alert rule evaluation, Alertmanager health, and local email notification capture have been checked.
+The local monitoring stack is configured and verified. Prometheus metrics collection, Grafana dashboard provisioning, alert rule evaluation, Alertmanager health, local email notification capture, and `promtool` validation have been checked.

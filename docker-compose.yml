@@ -18,6 +18,20 @@ services:
       - node-exporter
       - alertmanager
 
+  promtool:
+    image: prom/prometheus:v3.5.0
+    profiles:
+      - validation
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+    entrypoint:
+      - "/bin/promtool"
+    command:
+      - "check"
+      - "config"
+      - "/etc/prometheus/prometheus.yml"
+
   node-exporter:
     image: prom/node-exporter:v1.9.1
     container_name: monitoring-node-exporter

@@ -43,6 +43,14 @@ Mailpit's SMTP endpoint is available internally to the Docker Compose network at
 
 ## Getting Started
 
+Create a local environment file from the example:
+
+```bash
+cp .env.example .env
+```
+
+Edit `.env` and set a unique, strong Grafana administrator password before starting the stack. The `.env` file is excluded from version control and must not be committed.
+
 Start the monitoring stack:
 
 ```bash
@@ -71,12 +79,9 @@ docker compose logs -f prometheus
 
 Open [Grafana](http://localhost:3000) in your browser.
 
-The local development credentials configured in Docker Compose are:
+Use the administrator username and password configured in `.env`.
 
-- Username: `admin`
-- Password: `admin`
-
-These credentials are intended for local development only. Change them before exposing Grafana to a network or deploying it publicly.
+For an existing Grafana data volume, changing `GRAFANA_ADMIN_PASSWORD` in `.env` does not automatically update the password of an already provisioned administrator. Update the existing Grafana password separately when applying this configuration to an existing installation.
 
 The Prometheus data source and the Monitoring Dashboard are provisioned automatically from configuration files in the `grafana/provisioning` and `grafana/dashboards` directories.
 
@@ -132,7 +137,6 @@ docker compose run --rm --entrypoint /bin/promtool promtool check rules /etc/pro
 A successful validation reports `SUCCESS` and the number of rules found.
 
 The `--rm` flag removes the temporary validation container after the command finishes. No additional long-running service is required.
-
 
 ## Validate Alertmanager Configuration
 

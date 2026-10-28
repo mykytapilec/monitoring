@@ -12,12 +12,7 @@ groups:
           description: "Target {{ $labels.job }} at {{ $labels.instance }} has been unavailable for more than 1 minute."
 
       - alert: HighCPUUsage
-        expr: |
-          100 * (
-            1 - avg by (instance) (
-              rate(node_cpu_seconds_total{mode="idle"}[5m])
-            )
-          ) > 80
+        expr: instance:node_cpu_usage:percent_rate5m > 80
         for: 5m
         labels:
           severity: warning

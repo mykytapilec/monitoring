@@ -1,0 +1,33 @@
+
+groups:
+  - name: monitoring-recording-rules
+    interval: 15s
+    rules:
+      - record: instance:node_cpu_usage:percent_rate5m
+        expr: |
+          100 * (
+            1 - avg by (instance) (
+              rate(node_cpu_seconds_total{mode="idle"}[5m])
+            )
+          )
+
+      - record: instance:node_memory_usage:percent
+        expr: |
+          100 * (
+            1 -
+            node_memory_MemAvailable_bytes
+            /
+            node_memory_MemTotal_bytes
+          )
+
+      - record: instance:node_network_receive_bytes:rate5m
+        expr: |
+          sum by (instance) (
+            rate(node_network_receive_bytes_total{device!="lo"}[5m])
+          )
+
+      - record: instance:node_network_transmit_bytes:rate5m
+        expr: |
+          sum by (instance) (
+            rate(node_network_transmit_bytes_total{device!="lo"}[5m])
+          )

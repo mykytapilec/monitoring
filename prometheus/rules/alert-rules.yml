@@ -19,3 +19,12 @@ groups:
         annotations:
           summary: "High CPU usage detected"
           description: "CPU usage on {{ $labels.instance }} has exceeded 80% for more than 5 minutes."
+
+      - alert: HighMemoryUsage
+        expr: instance:node_memory_usage:percent > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage on {{ $labels.instance }} has exceeded 80% for more than 5 minutes."

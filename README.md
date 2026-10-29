@@ -9,7 +9,8 @@ The stack uses Prometheus to collect metrics, Node Exporter to expose system met
 - Collect infrastructure metrics using Prometheus and Node Exporter.
 - Visualize metrics with a provisioned Grafana dashboard.
 - Provision the Prometheus data source and dashboards automatically.
-- Define alerting rules for unavailable monitoring targets and high CPU usage.
+- Define alerting rules for unavailable monitoring targets, high CPU usage, and high memory usage.
+- Route critical and warning alerts through severity-based Alertmanager routes.
 - Route alerts through Alertmanager and verify email notifications using Mailpit.
 - Validate Prometheus configuration and alerting rules with `promtool`.
 - Provide a reproducible local monitoring environment with Docker Compose.
@@ -28,11 +29,11 @@ The stack uses Prometheus to collect metrics, Node Exporter to expose system met
 
 | Service | URL | Purpose |
 | --- | --- | --- |
-| Prometheus | http://localhost:9090 | Metrics collection, querying, and alert rule evaluation |
-| Grafana | http://localhost:3000 | Metrics visualization and dashboards |
-| Node Exporter | http://localhost:9100/metrics | System metrics endpoint |
-| Alertmanager | http://localhost:9093 | Alert grouping, routing, and notification delivery |
-| Mailpit | http://localhost:8025 | Local email inbox for alert notifications |
+| Prometheus | [http://localhost:9090](http://localhost:9090) | Metrics collection, querying, and alert rule evaluation |
+| Grafana | [http://localhost:3000](http://localhost:3000) | Metrics visualization and dashboards |
+| Node Exporter | [http://localhost:9100/metrics](http://localhost:9100/metrics) | System metrics endpoint |
+| Alertmanager | [http://localhost:9093](http://localhost:9093) | Alert grouping, routing, and notification delivery |
+| Mailpit | [http://localhost:8025](http://localhost:8025) | Local email inbox for alert notifications |
 
 Mailpit's SMTP endpoint is available internally to the Docker Compose network at `mailpit:1025`.
 
@@ -93,6 +94,10 @@ The dashboard includes the following panels:
 - Container Filesystem Usage
 - Network Traffic
 
+The filesystem panel displays metrics reported by Node Exporter for the filesystems visible to its runtime.
+
+In Docker Desktop on macOS, these metrics may not represent the actual disk usage of the host system.
+
 ## Alerting
 
 Prometheus loads alerting rules from `prometheus/rules/alert-rules.yml`.
@@ -103,6 +108,15 @@ The current rules are:
 | --- | --- | --- |
 | `PrometheusTargetDown` | A monitored target is unavailable for more than 1 minute | `critical` |
 | `HighCPUUsage` | CPU usage exceeds 80% for more than 5 minutes | `warning` |
+| `HighMemoryUsage` | Memory usage exceeds 80% for more than 5 minutes | `warning` |
+
+Alertmanager routes notifications according to their severity:
+
+- **Critical alerts:** Sent through the `mailpit-critical` receiver with no initial group wait and a repeat interval of 30 minutes.
+- **Warning alerts:** Sent through the `mailpit-warning` receiver with an initial group wait of 30 seconds and a repeat interval of 4 hours.
+- **Default route:** Uses the `mailpit` receiver for alerts that do not match the severity-specific routes.
+
+All receivers send notifications to the local Mailpit SMTP service. Resolved notifications are enabled for all receivers.
 
 Prometheus sends alerts to Alertmanager, which routes notifications to Mailpit through the local SMTP endpoint.
 
@@ -211,4 +225,4 @@ To remove the stack's persistent data as well, remove the associated Docker volu
 
 ## Project Status
 
-The local monitoring stack is configured and verified. Prometheus metrics collection, Grafana dashboard provisioning, alert rule evaluation, Alertmanager health, local email notification capture, and `promtool` validation have been checked.
+The local monitoring stack is configured and verified. Prometheus metrics collection, Grafana dashboard provisioning, CPU and memory alert evaluation, severity-based Alertmanager routing, local email notification capture, and configuration validation have been checked.

@@ -1,19 +1,24 @@
+
 # Monitoring
 
 A local infrastructure monitoring stack built as part of the [roadmap.sh Monitoring project](https://roadmap.sh/projects/monitoring).
 
 The stack uses Prometheus to collect metrics, Node Exporter to expose system metrics, Grafana to visualize monitoring data, Alertmanager to route alerts, and Mailpit to capture alert notification emails locally.
 
+A sample Node.js application is also included to demonstrate application-level monitoring with Prometheus metrics.
+
 ## Project Goals
 
 - Collect infrastructure metrics using Prometheus and Node Exporter.
-- Visualize metrics with a provisioned Grafana dashboard.
+- Collect application-specific metrics from a Node.js application.
+- Visualize metrics with provisioned Grafana dashboards.
 - Provision the Prometheus data source and dashboards automatically.
 - Define alerting rules for unavailable monitoring targets, high CPU usage, and high memory usage.
 - Route critical and warning alerts through severity-based Alertmanager routes.
 - Route alerts through Alertmanager and verify email notifications using Mailpit.
 - Validate Prometheus configuration and alerting rules with `promtool`.
 - Provide a reproducible local monitoring environment with Docker Compose.
+- Protect Grafana access with administrator authentication.
 
 ## Technology Stack
 
@@ -23,6 +28,9 @@ The stack uses Prometheus to collect metrics, Node Exporter to expose system met
 - Grafana
 - Alertmanager
 - Mailpit
+- Node.js
+- TypeScript
+- prom-client
 - promtool
 
 ## Services
@@ -31,6 +39,7 @@ The stack uses Prometheus to collect metrics, Node Exporter to expose system met
 | --- | --- | --- |
 | Prometheus | [http://localhost:9090](http://localhost:9090) | Metrics collection, querying, and alert rule evaluation |
 | Grafana | [http://localhost:3000](http://localhost:3000) | Metrics visualization and dashboards |
+| Application | [http://localhost:3001](http://localhost:3001) | Sample Node.js application with Prometheus instrumentation |
 | Node Exporter | [http://localhost:9100/metrics](http://localhost:9100/metrics) | System metrics endpoint |
 | Alertmanager | [http://localhost:9093](http://localhost:9093) | Alert grouping, routing, and notification delivery |
 | Mailpit | [http://localhost:8025](http://localhost:8025) | Local email inbox for alert notifications |
@@ -82,11 +91,44 @@ Open [Grafana](http://localhost:3000) in your browser.
 
 Use the administrator username and password configured in `.env`.
 
-For an existing Grafana data volume, changing `GRAFANA_ADMIN_PASSWORD` in `.env` does not automatically update the password of an already provisioned administrator. Update the existing Grafana password separately when applying this configuration to an existing installation.
+Grafana administrator credentials are provided through the following environment variables:
 
-The Prometheus data source and the Monitoring Dashboard are provisioned automatically from configuration files in the `grafana/provisioning` and `grafana/dashboards` directories.
+- `GRAFANA_ADMIN_USER`
+- `GRAFANA_ADMIN_PASSWORD`
 
-The dashboard includes the following panels:
+User self-registration is disabled.
+
+For an existing Grafana data volume, changing `GRAFANA_ADMIN_PASSWORD` in `.env` does not automatically update the password of an existing administrator. The password must be updated separately.
+
+### Reset the Grafana Administrator Password
+
+To reset the administrator password to the value configured in `.env`, run:
+
+```bash
+set -a
+source .env
+set +a
+
+printf '%s' "$GRAFANA_ADMIN_PASSWORD" | \
+  docker compose exec -T grafana \
+  grafana cli admin reset-admin-password --password-from-stdin
+
+unset GRAFANA_ADMIN_USER GRAFANA_ADMIN_PASSWORD
+```
+
+This command updates the existing administrator password without removing Grafana data or Docker volumes.
+
+Do not remove the `grafana_data` volume when resetting the administrator password.
+
+### Provisioned Dashboards
+
+The Prometheus data source and dashboards are provisioned automatically from configuration files in the `grafana/provisioning` and `grafana/dashboards` directories.
+
+The `Monitoring` folder contains two dashboards.
+
+**Monitoring Dashboard**
+
+The host monitoring dashboard includes:
 
 - CPU Usage
 - Monitoring Targets
@@ -97,6 +139,18 @@ The dashboard includes the following panels:
 The filesystem panel displays metrics reported by Node Exporter for the filesystems visible to its runtime.
 
 In Docker Desktop on macOS, these metrics may not represent the actual disk usage of the host system.
+
+**Application Monitoring**
+
+The application monitoring dashboard includes:
+
+- HTTP Requests per Second
+- HTTP Request Duration p95
+- Total HTTP Requests
+- Requests in Progress
+- Process Memory Usage
+- Process CPU Usage
+- Node.js Event Loop Lag
 
 ## Alerting
 
@@ -160,7 +214,7 @@ Validate the Alertmanager configuration using `amtool` from the same Alertmanage
 docker compose run --rm alertmanager-validator
 ```
 
-The validator checks `alertmanager/alertmanager.yml` without starting a persistent service.
+The validator checks the Alertmanager configuration without starting a persistent service.
 
 A successful validation reports that the configuration file is valid. The `--rm` flag removes the temporary container after the command finishes.
 
@@ -225,4 +279,4 @@ To remove the stack's persistent data as well, remove the associated Docker volu
 
 ## Project Status
 
-The local monitoring stack is configured and verified. Prometheus metrics collection, Grafana dashboard provisioning, CPU and memory alert evaluation, severity-based Alertmanager routing, local email notification capture, and configuration validation have been checked.
+The local monitoring stack is configured and verified. Prometheus metrics collection, Grafana dashboard provisioning, application monitoring, CPU and memory alert evaluation, severity-based Alertmanager routing, local email notification capture, and configuration validation have been checked.

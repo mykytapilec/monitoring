@@ -112,7 +112,8 @@
         }
       ],
       "title": "CPU Usage",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Host CPU utilization calculated from the proportion of non-idle CPU time."
     },
     {
       "datasource": {
@@ -121,20 +122,26 @@
       },
       "fieldConfig": {
         "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
           "color": {
             "mode": "thresholds"
           },
-          "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "green",
-                "value": 0
+                "color": "red",
+                "value": null
               },
               {
-                "color": "red",
+                "color": "yellow",
                 "value": 80
+              },
+              {
+                "color": "green",
+                "value": 100
               }
             ]
           }
@@ -174,17 +181,18 @@
           },
           "disableTextWrap": false,
           "editorMode": "builder",
-          "expr": "up",
+          "expr": "100 * sum(up) / count(up)",
           "fullMetaSearch": false,
           "includeNullMetadata": true,
-          "legendFormat": "{{job}}",
+          "legendFormat": "Available targets",
           "range": true,
           "refId": "A",
           "useBackend": false
         }
       ],
-      "title": "Monitoring Targets",
-      "type": "stat"
+      "title": "Target Availability",
+      "type": "stat",
+      "description": "Percentage of configured Prometheus scrape targets that are currently healthy."
     },
     {
       "datasource": {
@@ -258,7 +266,8 @@
         }
       ],
       "title": "Memory Usage",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Percentage of host memory currently used, based on available memory."
     },
     {
       "datasource": {
@@ -325,14 +334,15 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "100 * (1 - node_filesystem_avail_bytes / node_filesystem_size_bytes)",
+          "expr": "100 * (1 - node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs|nsfs\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay|squashfs|nsfs\"})",
           "legendFormat": "{{mountpoint}}",
           "range": true,
           "refId": "A"
         }
       ],
       "title": "Container Filesystem Usage",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Filesystem usage excluding temporary and virtual filesystems."
     },
     {
       "datasource": {
@@ -358,19 +368,6 @@
             "spanNulls": false
           },
           "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": 0
-              },
-              {
-                "color": "red",
-                "value": 80
-              }
-            ]
-          },
           "unit": "bytes/sec"
         },
         "overrides": []
@@ -413,7 +410,8 @@
         }
       ],
       "title": "Network Traffic",
-      "type": "timeseries"
+      "type": "timeseries",
+      "description": "Network receive and transmit throughput, excluding loopback and common virtual interfaces."
     }
   ],
   "preload": false,
@@ -430,5 +428,5 @@
   "timezone": "browser",
   "title": "Monitoring Dashboard",
   "uid": "monitoring-dashboard",
-  "version": 5
+  "version": 6
 }

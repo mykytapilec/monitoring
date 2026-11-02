@@ -1,3 +1,4 @@
+
 {
   "id": null,
   "uid": "application-monitoring",
@@ -5,15 +6,45 @@
   "tags": [
     "monitoring",
     "application",
-    "nodejs"
+    "nodejs",
+    "loki"
   ],
   "timezone": "browser",
   "schemaVersion": 41,
-  "version": 2,
+  "version": 3,
   "refresh": "15s",
   "time": {
     "from": "now-1h",
     "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "route",
+        "label": "HTTP Route",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "definition": "label_values(http_requests_total{job=\"application\"}, route)",
+        "query": {
+          "query": "label_values(http_requests_total{job=\"application\"}, route)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "selected": true,
+          "text": "All",
+          "value": "$__all"
+        },
+        "options": []
+      }
+    ]
   },
   "panels": [
     {
@@ -32,7 +63,7 @@
       },
       "targets": [
         {
-          "expr": "sum by (route) (rate(http_requests_total{job=\"application\"}[5m]))",
+          "expr": "sum by (route) (rate(http_requests_total{job=\"application\", route=~\"${route:pipe}\"}[5m]))",
           "legendFormat": "{{route}}",
           "refId": "A"
         }
@@ -71,7 +102,7 @@
       },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=\"application\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, route) (rate(http_request_duration_seconds_bucket{job=\"application\", route=~\"${route:pipe}\"}[5m])))",
           "legendFormat": "{{route}}",
           "refId": "A"
         }
@@ -110,7 +141,7 @@
       },
       "targets": [
         {
-          "expr": "sum(increase(http_requests_total{job=\"application\"}[$__range]))",
+          "expr": "sum(increase(http_requests_total{job=\"application\", route=~\"${route:pipe}\"}[$__range]))",
           "legendFormat": "Requests",
           "refId": "A"
         }
@@ -308,6 +339,44 @@
           "mode": "single"
         }
       }
+    },
+    {
+      "id": 8,
+      "title": "Application Logs",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "loki",
+            "uid": "loki"
+          },
+          "editorMode": "code",
+          "expr": "{service=\"monitoring-application\"} | json | route=~\"${route:pipe}\"",
+          "queryType": "range",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": true,
+        "showCommonLabels": false,
+        "showLabels": true,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "description": "Application logs filtered by the selected HTTP route. Use the same time range to correlate log events with Prometheus metrics."
     }
   ],
   "annotations": {

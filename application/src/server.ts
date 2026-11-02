@@ -1,6 +1,12 @@
 
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse
+} from "node:http";
 import client from "prom-client";
+
+type LogLevel = "info" | "warn" | "error";
 
 const register = new client.Registry();
 
@@ -39,6 +45,25 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error("PORT must be a valid TCP port.");
 }
 
+function writeLog(
+  level: LogLevel,
+  message: string,
+  context: Record<string, string | number | boolean> = {}
+): void {
+  console.log(
+    JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      ...context
+    })
+  );
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function sendJson(
   response: ServerResponse,
   statusCode: number,
@@ -66,7 +91,9 @@ async function handleRequest(
 
       response.end(await register.metrics());
     } catch (error) {
-      console.error("Failed to generate Prometheus metrics:", error);
+      writeLog("error", "Failed to generate Prometheus metrics", {
+        error: getErrorMessage(error)
+      });
 
       if (!response.headersSent) {
         sendJson(response, 500, {
@@ -88,37 +115,50 @@ async function handleRequest(
   try {
     if (method === "GET" && url.pathname === "/") {
       route = "/";
+
       sendJson(response, 200, {
         name: "Monitoring Application",
         status: "running"
       });
+
       return;
     }
 
     if (method === "GET" && url.pathname === "/health") {
       route = "/health";
+
       sendJson(response, 200, {
         status: "healthy"
       });
+
       return;
     }
 
     if (method === "GET" && url.pathname === "/api/hello") {
       route = "/api/hello";
+
       sendJson(response, 200, {
         message: "Hello from the monitoring application!"
       });
+
       return;
     }
 
     statusCode = method === "GET" ? 404 : 405;
 
     sendJson(response, statusCode, {
-      error: statusCode === 404 ? "Not found." : "Method not allowed."
+      error: statusCode === 404
+        ? "Not found."
+        : "Method not allowed."
     });
   } catch (error) {
     statusCode = 500;
-    console.error("Request processing failed:", error);
+
+    writeLog("error", "Request processing failed", {
+      error: getErrorMessage(error),
+      method,
+      route
+    });
 
     if (!response.headersSent) {
       sendJson(response, 500, {
@@ -126,7 +166,9 @@ async function handleRequest(
       });
     }
   } finally {
-    const duration = Number(process.hrtime.bigint() - startedAt) / 1e9;
+    const duration = Number(
+      process.hrtime.bigint() - startedAt
+    ) / 1e9;
 
     httpRequestsTotal.inc({
       method,
@@ -143,6 +185,20 @@ async function handleRequest(
     );
 
     httpRequestsInProgress.dec();
+
+    const level: LogLevel =
+      statusCode >= 500
+        ? "error"
+        : statusCode >= 400
+          ? "warn"
+          : "info";
+
+    writeLog(level, "HTTP request completed", {
+      method,
+      route,
+      status_code: statusCode,
+      duration_ms: Number((duration * 1000).toFixed(3))
+    });
   }
 }
 
@@ -151,5 +207,7 @@ const server = createServer((request, response) => {
 });
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(`Monitoring application listening on port ${port}.`);
+  writeLog("info", "Monitoring application started", {
+    port
+  });
 });

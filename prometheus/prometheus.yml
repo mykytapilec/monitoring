@@ -68,3 +68,22 @@ scrape_configs:
           - __meta_docker_port_private
         action: keep
         regex: "3001"
+
+  - job_name: docker-exporter
+    metrics_path: /metrics
+    docker_sd_configs:
+      - host: tcp://docker-socket-proxy:2375
+        refresh_interval: 15s
+    relabel_configs:
+      - source_labels:
+          - __meta_docker_container_label_prometheus_scrape
+        action: keep
+        regex: "true"
+      - source_labels:
+          - __meta_docker_container_label_prometheus_job
+        action: keep
+        regex: docker-exporter
+      - source_labels:
+          - __meta_docker_port_private
+        action: keep
+        regex: "9101"

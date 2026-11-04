@@ -1,4 +1,3 @@
-
 # Environment variables
 .env
 .env.*
@@ -27,3 +26,7 @@ Thumbs.db
 application/node_modules/
 application/dist/
 application/coverage/
+
+# Docker Exporter artifacts
+docker-exporter/node_modules/
+docker-exporter/dist/

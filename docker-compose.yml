@@ -35,6 +35,18 @@ services:
     labels:
       prometheus_scrape: "true"
       prometheus_job: "prometheus"
+    healthcheck:
+      test:
+        - CMD
+        - /bin/wget
+        - -q
+        - -O
+        - /dev/null
+        - http://localhost:9090/-/healthy
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   promtool:
     image: prom/prometheus:v3.5.0
@@ -90,6 +102,16 @@ services:
     labels:
       prometheus_scrape: "true"
       prometheus_job: "application"
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/health').then((response) => { if (!response.ok) process.exit(1); }).catch(() => process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   loki:
     image: grafana/loki:3.5.0
@@ -102,6 +124,18 @@ services:
     volumes:
       - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
       - loki_data:/loki
+    healthcheck:
+      test:
+        - CMD
+        - /busybox/wget
+        - -q
+        - -O
+        - /dev/null
+        - http://localhost:3100/ready
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   alloy:
     image: grafana/alloy:v1.10.2
@@ -137,6 +171,18 @@ services:
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - loki
+    healthcheck:
+      test:
+        - CMD
+        - /usr/bin/wget
+        - -q
+        - -O
+        - /dev/null
+        - http://localhost:3000/api/health
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
 
   alertmanager:
     image: prom/alertmanager:v0.28.1
@@ -152,6 +198,18 @@ services:
       - "--storage.path=/alertmanager"
     depends_on:
       - mailpit
+    healthcheck:
+      test:
+        - CMD
+        - /bin/wget
+        - -q
+        - -O
+        - /dev/null
+        - http://localhost:9093/-/healthy
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
   mailpit:
     image: axllent/mailpit:v1.27.8

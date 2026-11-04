@@ -1,5 +1,18 @@
 
 services:
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0
+    container_name: monitoring-docker-socket-proxy
+    restart: unless-stopped
+    environment:
+      CONTAINERS: "1"
+      NETWORKS: "1"
+      POST: "0"
+      PING: "1"
+      VERSION: "1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
   prometheus:
     image: prom/prometheus:v3.5.0
     container_name: monitoring-prometheus
@@ -15,9 +28,13 @@ services:
       - "--storage.tsdb.path=/prometheus"
       - "--storage.tsdb.retention.time=15d"
     depends_on:
+      - docker-socket-proxy
       - node-exporter
       - application
       - alertmanager
+    labels:
+      prometheus_scrape: "true"
+      prometheus_job: "prometheus"
 
   promtool:
     image: prom/prometheus:v3.5.0
@@ -51,6 +68,9 @@ services:
     restart: unless-stopped
     ports:
       - "9100:9100"
+    labels:
+      prometheus_scrape: "true"
+      prometheus_job: "node-exporter"
 
   application:
     build:
@@ -67,6 +87,9 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    labels:
+      prometheus_scrape: "true"
+      prometheus_job: "application"
 
   loki:
     image: grafana/loki:3.5.0

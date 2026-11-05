@@ -1,0 +1,11 @@
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: Mailpit
+    receivers:
+      - uid: grafana-mailpit
+        type: email
+        settings:
+          addresses: admin@monitoring.local
+        disableResolveMessage: false

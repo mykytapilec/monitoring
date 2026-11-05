@@ -334,15 +334,15 @@
       "targets": [
         {
           "editorMode": "code",
-          "expr": "100 * (1 - node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs|nsfs\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay|squashfs|nsfs\"})",
+          "expr": "100 * (1 - (node_filesystem_avail_bytes{fstype!~\"tmpfs|overlay|squashfs|nsfs|iso9660\",mountpoint!~\"^(/etc/(hostname|hosts|resolv\\\\.conf)|/var/lib/mount-services-cache(/.*)?)$\"} / node_filesystem_size_bytes{fstype!~\"tmpfs|overlay|squashfs|nsfs|iso9660\",mountpoint!~\"^(/etc/(hostname|hosts|resolv\\\\.conf)|/var/lib/mount-services-cache(/.*)?)$\"}))",
           "legendFormat": "{{mountpoint}}",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "Container Filesystem Usage",
+      "title": "Linux Filesystem Usage",
       "type": "timeseries",
-      "description": "Filesystem usage excluding temporary and virtual filesystems."
+      "description": "Filesystem utilization on the monitored Linux host. On Docker Desktop, this represents the Linux VM rather than the macOS host."
     },
     {
       "datasource": {
